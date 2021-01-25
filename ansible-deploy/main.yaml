@@ -16,7 +16,7 @@
         name: all
         login_host: mysql-cluster-proxysql
         login_user: root
-        login_password: root_password
+        login_password: "{{ lookup('env', 'root_password') }}"
         state: import
         target: "{{ item.path }}"
       with_items: "{{ schemas.files }}"
@@ -27,7 +27,7 @@
         name: all
         login_host: mysql-cluster-proxysql
         login_user: root
-        login_password: root_password
+        login_password: "{{ lookup('env', 'root_password') }}"
         state: import
         target: "{{ item.path }}"
         single_transaction: yes

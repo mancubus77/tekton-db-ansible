@@ -25,7 +25,7 @@
       ignore_errors: yes
       mysql_db:
         name: all
-        login_host: 127.0.0.1
+        login_host: mysql-cluster-proxysql
         login_user: root
         login_password: root_password
         state: import

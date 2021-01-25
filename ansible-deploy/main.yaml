@@ -1,0 +1,34 @@
+- hosts: localhost
+  connection: local
+  tasks:
+    - name: GET ALL SCHEMAS IN DIR
+      find:
+        paths: "../schema/"
+      register: schemas
+
+    - name: GET ALL DATA-FILES IN DIR
+      find:
+        paths: "../data/"
+      register: data
+
+    - name: APPLY SCHEMA
+      mysql_db:
+        name: all
+        login_host: 127.0.0.1
+        login_user: root
+        login_password: root
+        state: import
+        target: "{{ item.path }}"
+      with_items: "{{ schemas.files }}"
+
+    - name: MIGRATE DATA
+      ignore_errors: yes
+      mysql_db:
+        name: all
+        login_host: 127.0.0.1
+        login_user: root
+        login_password: root
+        state: import
+        target: "{{ item.path }}"
+        single_transaction: yes
+      with_items: "{{ data.files }}"

@@ -1,0 +1,87 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: migrate-db
+spec:
+  workspaces:
+  - name: shared-workspace
+  params:
+  - name: git-url
+    type: string
+    description: url of the git repo for the code of deployment
+  - name: git-revision
+    type: string
+    description: revision to be used from repo of the code for deployment
+    default: "master"
+  tasks:
+  # Fetch Ansible Runner from github
+  - name: build-ansible-runner
+    taskRef:
+      name: git-clone
+      kind: ClusterTask
+    workspaces:
+    - name: output
+      workspace: shared-workspace
+    params:
+    - name: url
+      value: "https://github.com/ansible/ansible-runner.git"
+    - name: subdirectory
+      value: ""
+    - name: deleteExisting
+      value: "true"
+    - name: revision
+      value: release_2.0
+
+  # Build Ansible-runner image
+  - name: build-runner-image
+    taskRef:
+      name: buildah
+#      kind: ClusterTask
+    params:
+    - name: TLSVERIFY
+      value: "false"
+    - name: IMAGE
+      value: "image-registry.openshift-image-registry.svc:5000/percona/my-ansible-runner"
+    - name: INSTALL_AFTER_BUILD
+      value: "mysql"
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+    runAfter:
+    - build-ansible-runner
+
+  # Fetch code repo from github
+  - name: fetch-repository
+    taskRef:
+      name: git-clone
+      kind: ClusterTask
+    workspaces:
+    - name: output
+      workspace: shared-workspace
+    params:
+    - name: url
+      value: $(params.git-url)
+    - name: subdirectory
+      value: ""
+    - name: deleteExisting
+      value: "true"
+    - name: revision
+      value: $(params.git-revision)
+    runAfter:
+      - build-runner-image
+
+  # Run Ansible Runner Playbook
+  - name: ansible-runner
+    taskRef:
+      name: ansible-runner
+    params:
+    - name: project-dir
+      value: "ansible-deploy"
+    - name: args
+      value:
+       - main.yaml
+    workspaces:
+    - name: runner-dir
+      workspace: shared-workspace
+    runAfter:
+    - fetch-repository

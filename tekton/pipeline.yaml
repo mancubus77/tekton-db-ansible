@@ -14,41 +14,23 @@ spec:
     description: revision to be used from repo of the code for deployment
     default: "master"
   tasks:
-  # Fetch Ansible Runner from github
-  - name: build-ansible-runner
-    taskRef:
-      name: git-clone
-      kind: ClusterTask
-    workspaces:
-    - name: output
-      workspace: shared-workspace
-    params:
-    - name: url
-      value: "https://github.com/ansible/ansible-runner.git"
-    - name: subdirectory
-      value: ""
-    - name: deleteExisting
-      value: "true"
-    - name: revision
-      value: release_2.0
 
   # Build Ansible-runner image
   - name: build-runner-image
     taskRef:
       name: buildah
-#      kind: ClusterTask
     params:
     - name: TLSVERIFY
       value: "false"
     - name: IMAGE
+      value: "docker.io/ansible/ansible-runner:1.4.6"
+    - name: OUT-IMAGE
       value: "image-registry.openshift-image-registry.svc:5000/percona/my-ansible-runner"
     - name: INSTALL_AFTER_BUILD
       value: "mysql"
     workspaces:
     - name: source
       workspace: shared-workspace
-    runAfter:
-    - build-ansible-runner
 
   # Fetch code repo from github
   - name: fetch-repository
